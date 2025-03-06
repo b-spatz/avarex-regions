@@ -1,0 +1,38 @@
+<!-- AvareX chart regions, 2024-09-10, bspatz -->
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<p>AvareX chart <a target="_blank" href="regions.txt">regions</a>, per Zubair via
+<a target="_blank" href="https://groups.google.com/g/apps4av-forum/c/8WTCg3zcoRU/m/iinEo21XAQAJ">apps4av-forum@googlegroups.com</a></p>
+<div id="map" style="_height: 600px; height: 90%;"</div>  
+<div style="display: none;"><div id="credit" class="leaflet-control-attribution">AvareX chart regions (2024-09-10, bspatz)</a></div></div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script>
+d3.csv("regions.txt", function(regions) {
+   var fc = { "type": "FeatureCollection", "features": [] };
+   regions.forEach(function(d, i) {
+      var bboxPolygon = turf.bboxPolygon(turf.bbox(turf.lineString(JSON.parse(d.xy))));
+      bboxPolygon.properties = { region: d.name, color: d.color };
+      fc.features.push(bboxPolygon);
+   });
+
+   var map = L.map("map");
+   var streets = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 10, attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'}).addTo(map);
+   var credit = L.control({ position: "bottomleft" }); credit.onAdd = function() { return L.DomUtil.get("credit"); }; credit.addTo(map);
+
+   $.getJSON("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json", function(geojson) {
+      L.geoJSON(geojson, { style: { color: "black", weight: 0.5 }}).addTo(map);
+      var gj_layer = L.geoJSON(fc, {
+         onEachFeature: function(feature, layer) {
+            layer.setStyle({ color: feature.properties.color, fillColor: feature.properties.color, fillOpacity: 0.3 });
+            layer.bindTooltip(feature.properties.region, { direction: "top", permanent: true } );
+         }
+      }).addTo(map);
+      map.fitBounds(gj_layer.getBounds());
+   });
+});
+</script>
